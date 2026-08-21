@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="The sky isn't the limit — a beautiful place to keep the links that matter." />
+  <meta name="theme-color" content="#0B0F2B" />
+  <meta name="color-scheme" content="dark" />
+  <title>The sky isn't the limit</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; }
+    body {
+      background: #0B0F2B;
+      color: #F5F7FC;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: rgba(244, 184, 96, 0.35); }
+  </style>
+
+  <!-- React + ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+  <!-- Lucide icons (UMD) -->
+  <script src="https://unpkg.com/lucide@0.441.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+    // Simple icon wrapper so we can use lucide without React components
+    function Icon({ name, size = 16, fill, style, ...rest }) {
+      const ref = useRef(null);
+      useEffect(() => {
+        if (ref.current && window.lucide) {
+          ref.current.innerHTML = "";
+          const svg = window.lucide.createElement
+            ? window.lucide.createElement(window.lucide.icons[name])
+            : null;
+          // fallback: use lucide's createIcons on a data attribute
+          ref.current.setAttribute("data-lucide", name);
+          if (window.lucide.createIcons) {
+            window.lucide.createIcons({
+              attrs: { width: size, height: size, stroke: "currentColor", "stroke-width": 2 },
+              nameAttr: "data-lucide",
+              root: ref.current.parentElement || document.body,
+            });
+          }
+        }
+      }, [name, size]);
+      return (
+        <span
+          ref={ref}
+          style={{
+            display: "inline-flex",
+            width: size,
+            height: size,
+            alignItems: "center",
+            justifyContent: "center",
+            color: "inherit",
+            ...style,
+          }}
+          {...rest}
+        />
+      );
+    }
+
+    // Because lucide UMD + React is awkward, we use inline SVGs for reliability
+    const Icons = {
+      Lock: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      ),
+      Unlock: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+        </svg>
+      ),
+      Plus: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 12h14"/><path d="M12 5v14"/>
+        </svg>
+      ),
+      X: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+        </svg>
+      ),
+      ExternalLink: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        </svg>
+      ),
+      Trash2: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
+        </svg>
+      ),
+      Star: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill={p.fill || "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      ),
+      Search: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+      ),
+      Pencil: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>
+        </svg>
+      ),
+      Check: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      ),
+      AlertCircle: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+        </svg>
+      ),
+      Copy: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+        </svg>
+      ),
+      GripVertical: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>
+        </svg>
+      ),
+      Info: (p) => (
+        <svg width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+        </svg>
+      ),
+    };
+
+    const ADMIN_PASSWORD = "mgsd2155";
+    const STORAGE_KEY = "sky-isnt-the-limit-data";
+
+    const INK = {
+      sky: "#5B8DEF",
+      skyDeep: "#3E6FD1",
+      dusk: "#3A2E73",
+      space: "#0B0F2B",
+      gold: "#F4B860",
+      goldDim: "#B98A45",
+      cloud: "#F5F7FC",
+      lavender: "#AFAFD6",
+      lavenderDim: "#7C7CA3",
+      card: "rgba(255,255,255,0.065)",
+      cardBorder: "rgba(255,255,255,0.13)",
+      danger: "#F09595",
+    };
+
+    const BIBLE_VERSES = [
+      { ref: "Psalm 19:1", text: "The heavens declare the glory of God; the skies proclaim the work of his hands." },
+      { ref: "Isaiah 40:26", text: "Lift up your eyes and look to the heavens: Who created all these? He who brings out the starry host one by one and calls forth each of them by name." },
+      { ref: "Genesis 1:1", text: "In the beginning God created the heavens and the earth." },
+      { ref: "Psalm 8:3-4", text: "When I consider your heavens, the work of your fingers, the moon and the stars, which you have set in place, what is mankind that you are mindful of them?" },
+      { ref: "John 3:16", text: "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life." },
+      { ref: "Philippians 4:13", text: "I can do all this through him who gives me strength." },
+      { ref: "Jeremiah 29:11", text: "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future." },
+      { ref: "Psalm 23:1", text: "The Lord is my shepherd, I lack nothing." },
+      { ref: "Matthew 5:14", text: "You are the light of the world. A town built on a hill cannot be hidden." },
+      { ref: "Romans 8:28", text: "And we know that in all things God works for the good of those who love him, who have been called according to his purpose." },
+      { ref: "Proverbs 3:5-6", text: "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight." },
+      { ref: "Isaiah 41:10", text: "So do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you." },
+      { ref: "Psalm 46:10", text: "Be still, and know that I am God." },
+      { ref: "Matthew 11:28", text: "Come to me, all you who are weary and burdened, and I will give you rest." },
+      { ref: "Joshua 1:9", text: "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go." },
+      { ref: "Psalm 119:105", text: "Your word is a lamp for my feet, a light on my path." },
+      { ref: "2 Timothy 1:7", text: "For the Spirit God gave us does not make us timid, but gives us power, love and self-discipline." },
+      { ref: "Lamentations 3:22-23", text: "Because of the Lord’s great love we are not consumed, for his compassions never fail. They are new every morning." },
+      { ref: "John 14:27", text: "Peace I leave with you; my peace I give you. I do not give to you as the world gives. Do not let your hearts be troubled and do not be afraid." },
+      { ref: "Psalm 121:1-2", text: "I lift up my eyes to the mountains—where does my help come from? My help comes from the Lord, the Maker of heaven and earth." },
+      { ref: "Colossians 3:23", text: "Whatever you do, work at it with all your heart, as working for the Lord, not for human masters." },
+      { ref: "Isaiah 40:31", text: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles." },
+      { ref: "Ephesians 2:8-9", text: "For it is by grace you have been saved, through faith—and this is not from yourselves, it is the gift of God." },
+      { ref: "Psalm 139:14", text: "I praise you because I am fearfully and wonderfully made." },
+      { ref: "Romans 12:2", text: "Do not conform to the pattern of this world, but be transformed by the renewing of your mind." },
+      { ref: "Matthew 6:33", text: "But seek first his kingdom and his righteousness, and all these things will be given to you as well." },
+      { ref: "Hebrews 11:1", text: "Now faith is confidence in what we hope for and assurance about what we do not see." },
+      { ref: "Psalm 27:1", text: "The Lord is my light and my salvation—whom shall I fear?" },
+      { ref: "1 Corinthians 16:14", text: "Do everything in love." },
+      { ref: "James 1:5", text: "If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you." },
+      { ref: "John 8:12", text: "I am the light of the world. Whoever follows me will never walk in darkness, but will have the light of life." },
+    ];
+
+    function getDailyVerse() {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const dayOfYear = Math.floor((now - start) / 86400000);
+      return BIBLE_VERSES[dayOfYear % BIBLE_VERSES.length];
+    }
+
+    function useStars(count) {
+      return useMemo(() =>
+        Array.from({ length: count }, (_, i) => {
+          const big = Math.random() < 0.1;
+          return {
+            id: i,
+            left: Math.random() * 100,
+            top: 4 + Math.random() * 92,
+            size: big ? 2.6 + Math.random() * 2 : 0.6 + Math.random() * 1.6,
+            glow: big ? 8 + Math.random() * 10 : 1.2 + Math.random() * 2.8,
+            delay: Math.random() * 9,
+            duration: 2 + Math.random() * 6,
+            layer: Math.random() < 0.3 ? 0 : Math.random() < 0.65 ? 1 : 2,
+            warm: Math.random() < 0.13,
+          };
+        }), [count]);
+    }
+
+    function faviconFor(url) {
+      try {
+        return `https://www.google.com/s2/favicons?sz=64&domain=${new URL(url).hostname}`;
+      } catch {
+        return null;
+      }
+    }
+
+    function hostFor(url) {
+      try {
+        return new URL(url).hostname.replace(/^www\./, "");
+      } catch {
+        return url;
+      }
+    }
+
+    function normalizeUrl(raw) {
+      let url = raw.trim();
+      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+      return url;
+    }
+
+    function Toast({ message, type = "info", onDone }) {
+      useEffect(() => {
+        const t = setTimeout(onDone, 2400);
+        return () => clearTimeout(t);
+      }, [onDone]);
+
+      return (
+        <div
+          role="status"
+          style={{
+            position: "fixed",
+            bottom: 28,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 18px",
+            borderRadius: 999,
+            background: "rgba(11,15,43,0.94)",
+            border: `1px solid ${type === "error" ? "rgba(240,149,149,0.45)" : "rgba(244,184,96,0.4)"}`,
+            color: type === "error" ? INK.danger : INK.gold,
+            fontSize: 13,
+            fontFamily: "'JetBrains Mono', monospace",
+            backdropFilter: "blur(12px)",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.45)",
+            animation: "toast-in 0.3s ease",
+          }}
+        >
+          {type === "error" ? <Icons.AlertCircle size={14} /> : <Icons.Check size={14} />}
+          {message}
+        </div>
+      );
+    }
+
+    function App() {
+      const [tabs, setTabs] = useState([]);
+      const [links, setLinks] = useState([]);
+      const [activeTab, setActiveTab] = useState(null);
+      const [loaded, setLoaded] = useState(false);
+
+      const [authed, setAuthed] = useState(false);
+      const [showLogin, setShowLogin] = useState(false);
+      const [pw, setPw] = useState("");
+      const [pwError, setPwError] = useState(false);
+
+      const [addingTab, setAddingTab] = useState(false);
+      const [newTabName, setNewTabName] = useState("");
+
+      const [addingLink, setAddingLink] = useState(false);
+      const [editingLinkId, setEditingLinkId] = useState(null);
+      const [newTitle, setNewTitle] = useState("");
+      const [newUrl, setNewUrl] = useState("");
+      const [newNote, setNewNote] = useState("");
+      const [formError, setFormError] = useState("");
+
+      const [search, setSearch] = useState("");
+      const [toast, setToast] = useState(null);
+      const [confirmDelete, setConfirmDelete] = useState(null);
+      const [dragId, setDragId] = useState(null);
+
+      const loginRef = useRef(null);
+      const searchRef = useRef(null);
+      const stars = useStars(120);
+      const [meteors, setMeteors] = useState([]);
+      const [mouse, setMouse] = useState({ x: 0.5, y: 0.5 });
+      const containerRef = useRef(null);
+      const verse = useMemo(() => getDailyVerse(), []);
+
+      useEffect(() => {
+        const onMove = (e) => {
+          if (!containerRef.current) return;
+          const r = containerRef.current.getBoundingClientRect();
+          setMouse({
+            x: (e.clientX - r.left) / r.width,
+            y: (e.clientY - r.top) / r.height,
+          });
+        };
+        window.addEventListener("mousemove", onMove, { passive: true });
+        return () => window.removeEventListener("mousemove", onMove);
+      }, []);
+
+      useEffect(() => {
+        let cancelled = false;
+        function schedule() {
+          const delay = 2000 + Math.random() * 5200;
+          const timer = setTimeout(() => {
+            if (cancelled) return;
+            const id = "m-" + Date.now() + Math.random().toString(36).slice(2);
+            const big = Math.random() < 0.3;
+            const angle = 20 + Math.random() * 30;
+            const distance = big ? 450 + Math.random() * 200 : 230 + Math.random() * 170;
+            const rad = (angle * Math.PI) / 180;
+            const meteor = {
+              id,
+              left: Math.random() * 82,
+              top: 4 + Math.random() * 36,
+              duration: big ? 1.45 + Math.random() * 0.65 : 0.7 + Math.random() * 0.55,
+              angle,
+              dx: Math.cos(rad) * distance,
+              dy: Math.sin(rad) * distance,
+              length: big ? 170 + Math.random() * 80 : 50 + Math.random() * 60,
+              big,
+            };
+            setMeteors((p) => [...p, meteor]);
+            setTimeout(() => {
+              if (!cancelled) setMeteors((p) => p.filter((m) => m.id !== id));
+            }, meteor.duration * 1000 + 220);
+            schedule();
+          }, delay);
+          return timer;
+        }
+        const t = schedule();
+        return () => {
+          cancelled = true;
+          clearTimeout(t);
+        };
+      }, []);
+
+      useEffect(() => {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const t = parsed.tabs?.length ? parsed.tabs : [{ id: "t-favorites", name: "Favorites" }];
+            setTabs(t);
+            setLinks(parsed.links || []);
+            setActiveTab(t[0].id);
+          } else {
+            const seed = [{ id: "t-favorites", name: "Favorites" }];
+            setTabs(seed);
+            setActiveTab(seed[0].id);
+          }
+        } catch {
+          const seed = [{ id: "t-favorites", name: "Favorites" }];
+          setTabs(seed);
+          setActiveTab(seed[0].id);
+        } finally {
+          setLoaded(true);
+        }
+      }, []);
+
+      useEffect(() => {
+        if (showLogin && loginRef.current) loginRef.current.focus();
+      }, [showLogin]);
+
+      useEffect(() => {
+        const onKey = (e) => {
+          if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+          if (e.key === "/") {
+            e.preventDefault();
+            searchRef.current?.focus();
+          }
+          if (e.key === "Escape") {
+            if (authed) {
+              setAuthed(false);
+              setAddingLink(false);
+              setEditingLinkId(null);
+              setAddingTab(false);
+            }
+            setShowLogin(false);
+            setConfirmDelete(null);
+          }
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+      }, [authed]);
+
+      const persist = useCallback((nextTabs, nextLinks) => {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ tabs: nextTabs, links: nextLinks }));
+        } catch {}
+      }, []);
+
+      const showToast = (message, type = "info") => setToast({ message, type });
+
+      function handleLockClick() {
+        if (authed) {
+          setAuthed(false);
+          setAddingLink(false);
+          setAddingTab(false);
+          setEditingLinkId(null);
+          showToast("Locked");
+        } else {
+          setShowLogin((v) => !v);
+          setPwError(false);
+          setPw("");
+        }
+      }
+
+      function submitPassword() {
+        if (pw === ADMIN_PASSWORD) {
+          setAuthed(true);
+          setShowLogin(false);
+          setPw("");
+          setPwError(false);
+          showToast("Sky unlocked");
+        } else {
+          setPwError(true);
+        }
+      }
+
+      function addTab() {
+        const name = newTabName.trim();
+        if (!name) return;
+        const tab = { id: "t-" + Date.now(), name };
+        const next = [...tabs, tab];
+        setTabs(next);
+        setActiveTab(tab.id);
+        setNewTabName("");
+        setAddingTab(false);
+        persist(next, links);
+        showToast(`“${name}” created`);
+      }
+
+      function requestDeleteTab(id, name) {
+        if (tabs.length <= 1) return showToast("Keep at least one tab", "error");
+        setConfirmDelete({ type: "tab", id, name });
+      }
+
+      function confirmDeleteAction() {
+        if (!confirmDelete) return;
+        if (confirmDelete.type === "tab") {
+          const next = tabs.filter((t) => t.id !== confirmDelete.id);
+          const nextLinks = links.filter((l) => l.tabId !== confirmDelete.id);
+          setTabs(next);
+          setLinks(nextLinks);
+          if (activeTab === confirmDelete.id) setActiveTab(next[0]?.id ?? null);
+          persist(next, nextLinks);
+          showToast(`“${confirmDelete.name}” removed`);
+        } else {
+          const next = links.filter((l) => l.id !== confirmDelete.id);
+          setLinks(next);
+          persist(tabs, next);
+          showToast("Link removed");
+        }
+        setConfirmDelete(null);
+      }
+
+      function startEdit(link) {
+        setEditingLinkId(link.id);
+        setNewTitle(link.title);
+        setNewUrl(link.url);
+        setNewNote(link.note || "");
+        setFormError("");
+        setAddingLink(false);
+      }
+
+      function saveLink() {
+        const title = newTitle.trim();
+        let url = normalizeUrl(newUrl);
+        if (!title || !newUrl.trim()) {
+          setFormError("Title and URL are required.");
+          return;
+        }
+        try {
+          new URL(url);
+        } catch {
+          setFormError("That URL doesn’t look valid.");
+          return;
+        }
+
+        if (editingLinkId) {
+          const next = links.map((l) =>
+            l.id === editingLinkId
+              ? { ...l, title, url, note: newNote.trim() || undefined }
+              : l
+          );
+          setLinks(next);
+          persist(tabs, next);
+          showToast("Updated");
+        } else {
+          const link = {
+            id: "l-" + Date.now(),
+            tabId: activeTab,
+            title,
+            url,
+            note: newNote.trim() || undefined,
+          };
+          const next = [...links, link];
+          setLinks(next);
+          persist(tabs, next);
+          showToast("Added");
+        }
+
+        setNewTitle("");
+        setNewUrl("");
+        setNewNote("");
+        setFormError("");
+        setAddingLink(false);
+        setEditingLinkId(null);
+      }
+
+      function requestDeleteLink(id, title) {
+        setConfirmDelete({ type: "link", id, name: title });
+      }
+
+      function copyUrl(url) {
+        navigator.clipboard?.writeText(url).then(() => showToast("Copied"));
+      }
+
+      function onDragStart(id) {
+        setDragId(id);
+      }
+      function onDragOver(e, overId) {
+        e.preventDefault();
+        if (!dragId || dragId === overId) return;
+        const from = links.findIndex((l) => l.id === dragId);
+        const to = links.findIndex((l) => l.id === overId);
+        if (from < 0 || to < 0) return;
+        const next = [...links];
+        const [item] = next.splice(from, 1);
+        next.splice(to, 0, item);
+        setLinks(next);
+      }
+      function onDragEnd() {
+        if (dragId) persist(tabs, links);
+        setDragId(null);
+      }
+
+      const q = search.trim().toLowerCase();
+      const visibleLinks = links
+        .filter((l) => l.tabId === activeTab)
+        .filter(
+          (l) =>
+            !q ||
+            l.title.toLowerCase().includes(q) ||
+            hostFor(l.url).toLowerCase().includes(q) ||
+            (l.note || "").toLowerCase().includes(q)
+        );
+
+      const linkCount = (tabId) => links.filter((l) => l.tabId === tabId).length;
+
+      return (
+        <div
+          ref={containerRef}
+          style={{
+            minHeight: "100vh",
+            width: "100%",
+            position: "relative",
+            overflow: "hidden",
+            background: `linear-gradient(180deg, ${INK.sky} 0%, ${INK.skyDeep} 16%, ${INK.dusk} 50%, ${INK.space} 100%)`,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            color: INK.cloud,
+          }}
+        >
+          <style>{`
+            @keyframes twinkle {
+              0%, 100% { opacity: 0.14; transform: scale(0.8); }
+              50% { opacity: 1; transform: scale(1.2); }
+            }
+            @keyframes drift {
+              0% { margin-top: 0; }
+              50% { margin-top: -7px; }
+              100% { margin-top: 0; }
+            }
+            @keyframes meteor-fly {
+              0% { transform: translate(0, 0); opacity: 0; }
+              7% { opacity: 1; }
+              72% { opacity: 1; }
+              100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+            }
+            @keyframes meteor-head-fade {
+              0% { opacity: 0; }
+              10% { opacity: 1; }
+              75% { opacity: 1; }
+              100% { opacity: 0; }
+            }
+            @keyframes toast-in {
+              from { opacity: 0; transform: translateX(-50%) translateY(14px); }
+              to { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+            @keyframes fade-up {
+              from { opacity: 0; transform: translateY(10px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes nebula {
+              0%, 100% { opacity: 0.32; }
+              50% { opacity: 0.52; }
+            }
+            .star {
+              position: absolute;
+              border-radius: 50%;
+              animation: twinkle ease-in-out infinite, drift ease-in-out infinite;
+              pointer-events: none;
+            }
+            .meteor-wrap {
+              position: absolute;
+              pointer-events: none;
+              animation: meteor-fly linear forwards;
+            }
+            .meteor-trail {
+              position: absolute;
+              top: 0; left: 0;
+              height: 2px;
+              border-radius: 2px;
+              transform-origin: left center;
+              background: linear-gradient(90deg, rgba(255,255,255,0.97), rgba(244,184,96,0.45), transparent);
+            }
+            .meteor-head {
+              position: absolute;
+              top: -3.5px; left: -1.5px;
+              width: 7px; height: 7px;
+              border-radius: 50%;
+              background: #fff;
+              box-shadow: 0 0 12px 4px rgba(255,255,255,0.95), 0 0 24px 8px rgba(244,184,96,0.55);
+              animation: meteor-head-fade linear forwards;
+            }
+            .skyfade-card {
+              transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), border-color 0.2s, background 0.2s, box-shadow 0.22s;
+            }
+            .skyfade-card:hover {
+              transform: translateY(-5px);
+              border-color: rgba(244,184,96,0.55) !important;
+              background: rgba(255,255,255,0.11) !important;
+              box-shadow: 0 14px 32px rgba(0,0,0,0.28), 0 0 0 1px rgba(244,184,96,0.15);
+            }
+            .skyfade-card.dragging {
+              opacity: 0.55;
+              transform: scale(0.97);
+            }
+            .skyfade-tab {
+              transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.15s;
+            }
+            .skyfade-tab:hover {
+              transform: translateY(-1px);
+            }
+            .skyfade-input {
+              background: rgba(255,255,255,0.08);
+              border: 1px solid rgba(255,255,255,0.18);
+              color: ${INK.cloud};
+              border-radius: 9px;
+              padding: 9px 13px;
+              font-family: 'Inter', sans-serif;
+              font-size: 14px;
+              outline: none;
+              transition: border-color 0.15s, background 0.15s;
+            }
+            .skyfade-input::placeholder {
+              color: ${INK.lavenderDim};
+            }
+            .skyfade-input:focus {
+              border-color: ${INK.gold};
+              background: rgba(255,255,255,0.12);
+            }
+            .skyfade-btn {
+              transition: opacity 0.15s, transform 0.12s;
+            }
+            .skyfade-btn:hover {
+              opacity: 0.9;
+            }
+            .skyfade-btn:active {
+              transform: scale(0.97);
+            }
+            .skyfade-btn:focus-visible {
+              outline: 2px solid ${INK.gold};
+              outline-offset: 2px;
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .star, .meteor-wrap, .meteor-head {
+                animation: none !important;
+                opacity: 0.65;
+              }
+              .skyfade-card:hover {
+                transform: none;
+              }
+            }
+          `}</style>
+
+          {/* Nebula */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              background:
+                "radial-gradient(ellipse 85% 55% at 18% 8%, rgba(91,141,239,0.2), transparent 58%), radial-gradient(ellipse 70% 45% at 82% 18%, rgba(58,46,115,0.28), transparent 55%), radial-gradient(ellipse 50% 30% at 50% 70%, rgba(11,15,43,0.4), transparent)",
+              animation: "nebula 16s ease-in-out infinite",
+            }}
+          />
+
+          {/* Stars */}
+          {stars.map((s) => {
+            const depth = s.layer === 0 ? 6 : s.layer === 1 ? 16 : 30;
+            const ox = (mouse.x - 0.5) * depth;
+            const oy = (mouse.y - 0.5) * depth * 0.55;
+            return (
+              <span
+                key={s.id}
+                className="star"
+                style={{
+                  left: `calc(${s.left}% + ${ox}px)`,
+                  top: `calc(${s.top}% + ${oy}px)`,
+                  width: s.size,
+                  height: s.size,
+                  background: s.warm ? "rgba(255,228,175,0.95)" : "rgba(255,255,255,0.95)",
+                  boxShadow: `0 0 ${s.glow}px ${s.glow * 0.35}px ${
+                    s.warm ? "rgba(255,205,130,0.55)" : "rgba(195,215,255,0.45)"
+                  }`,
+                  animationDelay: `${s.delay}s`,
+                  animationDuration: `${s.duration}s, ${6.5 + s.delay}s`,
+                }}
+              />
+            );
+          })}
+
+          {/* Meteors */}
+          {meteors.map((m) => (
+            <div
+              key={m.id}
+              className="meteor-wrap"
+              style={{
+                left: `${m.left}%`,
+                top: `${m.top}%`,
+                "--dx": `${m.dx}px`,
+                "--dy": `${m.dy}px`,
+                animationDuration: `${m.duration}s`,
+              }}
+            >
+              <div
+                className="meteor-trail"
+                style={{
+                  width: m.length,
+                  transform: `rotate(${m.angle}deg)`,
+                  opacity: m.big ? 0.95 : 0.72,
+                }}
+              />
+              <div className="meteor-head" style={{ animationDuration: `${m.duration}s` }} />
+            </div>
+          ))}
+
+          {/* Content */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 2,
+              maxWidth: 1080,
+              margin: "0 auto",
+              padding: "0 20px 100px",
+            }}
+          >
+            <header
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                paddingTop: 46,
+                gap: 16,
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ animation: "fade-up 0.55s ease" }}>
+                <div
+                  style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 11,
+                    letterSpacing: "0.22em",
+                    color: INK.lavender,
+                    textTransform: "uppercase",
+                    marginBottom: 12,
+                  }}
+                >
+                  a place to keep what matters
+                </div>
+                <h1
+                  style={{
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontWeight: 700,
+                    fontSize: "clamp(30px, 5.4vw, 56px)",
+                    lineHeight: 1.04,
+                    margin: 0,
+                    color: INK.cloud,
+                    letterSpacing: "-0.025em",
+                  }}
+                >
+                  The sky isn’t
+                  <br />
+                  the limit.
+                </h1>
+                <p
+                  style={{
+                    color: INK.lavender,
+                    fontSize: 15.5,
+                    marginTop: 15,
+                    maxWidth: 430,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  Everything you want to come back to, sorted into the sky and beyond.
+                </p>
+
+                {/* Daily Bible verse */}
+                <div
+                  style={{
+                    marginTop: 22,
+                    maxWidth: 460,
+                    padding: "14px 16px",
+                    borderRadius: 12,
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    animation: "fade-up 0.7s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      color: INK.gold,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Verse of the day
+                  </div>
+                  <div style={{ fontSize: 14.5, lineHeight: 1.55, color: INK.cloud }}>
+                    “{verse.text}”
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      fontSize: 12.5,
+                      color: INK.lavender,
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}
+                  >
+                    — {verse.ref}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <button
+                  onClick={handleLockClick}
+                  className="skyfade-btn"
+                  aria-label={authed ? "Lock" : "Unlock"}
+                  style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: "50%",
+                    border: `1px solid ${authed ? INK.gold : "rgba(255,255,255,0.28)"}`,
+                    background: authed ? "rgba(244,184,96,0.18)" : "rgba(255,255,255,0.07)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    color: authed ? INK.gold : INK.cloud,
+                  }}
+                >
+                  {authed ? <Icons.Unlock size={18} /> : <Icons.Lock size={18} />}
+                </button>
+
+                {showLogin && !authed && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 56,
+                      right: 0,
+                      width: 260,
+                      background: "rgba(11,15,43,0.97)",
+                      border: `1px solid ${INK.cardBorder}`,
+                      borderRadius: 14,
+                      padding: 16,
+                      backdropFilter: "blur(14px)",
+                      zIndex: 20,
+                      boxShadow: "0 18px 50px rgba(0,0,0,0.5)",
+                      animation: "fade-up 0.22s ease",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: INK.lavender,
+                        marginBottom: 8,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        letterSpacing: "0.07em",
+                      }}
+                    >
+                      ADMIN PASSWORD
+                    </div>
+                    <input
+                      ref={loginRef}
+                      className="skyfade-input"
+                      type="password"
+                      value={pw}
+                      onChange={(e) => {
+                        setPw(e.target.value);
+                        setPwError(false);
+                      }}
+                      onKeyDown={(e) => e.key === "Enter" && submitPassword()}
+                      placeholder="Enter password"
+                      style={{ width: "100%" }}
+                    />
+                    {pwError && (
+                      <div style={{ color: INK.danger, fontSize: 12, marginTop: 7 }}>
+                        Wrong password.
+                      </div>
+                    )}
+                    <button
+                      onClick={submitPassword}
+                      className="skyfade-btn"
+                      style={{
+                        marginTop: 12,
+                        width: "100%",
+                        padding: "9px 0",
+                        borderRadius: 9,
+                        border: "none",
+                        background: INK.gold,
+                        color: "#3D2A0C",
+                        fontWeight: 600,
+                        fontSize: 13,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Unlock
+                    </button>
+                  </div>
+                )}
+              </div>
+            </header>
+
+            {authed && (
+              <div
+                style={{
+                  marginTop: 20,
+                  fontSize: 12,
+                  color: INK.gold,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: "0.05em",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  animation: "fade-up 0.25s ease",
+                }}
+              >
+                <Icons.Star size={12} fill={INK.gold} /> Editing unlocked · drag to reorder · Esc to lock
+              </div>
+            )}
+
+            {loaded && (
+              <div style={{ marginTop: 24, maxWidth: 480 }}>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const q = search.trim();
+                    if (!q) return;
+                    // Always allow searching the web for anything
+                    window.open(
+                      `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+                      "_blank",
+                      "noopener,noreferrer"
+                    );
+                  }}
+                  style={{ position: "relative", display: "flex", gap: 8, alignItems: "center" }}
+                >
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: 14,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: INK.lavenderDim,
+                      pointerEvents: "none",
+                      display: "flex",
+                      zIndex: 1,
+                    }}
+                  >
+                    <Icons.Search size={16} />
+                  </span>
+                  <input
+                    ref={searchRef}
+                    className="skyfade-input"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search your links or the web…  (press /)"
+                    style={{
+                      flex: 1,
+                      paddingLeft: 42,
+                      paddingRight: 12,
+                      fontSize: 15,
+                      height: 44,
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    className="skyfade-btn"
+                    title="Search Google"
+                    style={{
+                      height: 44,
+                      padding: "0 16px",
+                      borderRadius: 10,
+                      border: "1px solid rgba(244,184,96,0.45)",
+                      background: "rgba(244,184,96,0.15)",
+                      color: INK.gold,
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      whiteSpace: "nowrap",
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                  >
+                    <Icons.Search size={14} />
+                    Search web
+                  </button>
+                </form>
+                {search.trim() && (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      fontSize: 12.5,
+                      color: INK.lavenderDim,
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}
+                  >
+                    Filtering your links · press Enter or “Search web” for Google
+                  </div>
+                )}
+              </div>
+            )}
+
+            <nav
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                marginTop: 20,
+                paddingBottom: 18,
+                borderBottom: `1px solid ${INK.cardBorder}`,
+                alignItems: "center",
+              }}
+            >
+              {tabs.map((t) => {
+                const count = linkCount(t.id);
+                const isActive = activeTab === t.id;
+                return (
+                  <div
+                    key={t.id}
+                    style={{ position: "relative", display: "flex", alignItems: "center" }}
+                  >
+                    <button
+                      onClick={() => setActiveTab(t.id)}
+                      className="skyfade-tab"
+                      style={{
+                        padding: authed ? "8px 30px 8px 14px" : "8px 14px",
+                        borderRadius: 999,
+                        border: `1px solid ${isActive ? INK.gold : "rgba(255,255,255,0.15)"}`,
+                        background: isActive
+                          ? "rgba(244,184,96,0.15)"
+                          : "rgba(255,255,255,0.05)",
+                        color: isActive ? INK.gold : INK.cloud,
+                        fontSize: 13.5,
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 7,
+                      }}
+                    >
+                      {t.name}
+                      {count > 0 && (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontFamily: "'JetBrains Mono', monospace",
+                            opacity: 0.7,
+                            background: isActive
+                              ? "rgba(244,184,96,0.22)"
+                              : "rgba(255,255,255,0.09)",
+                            padding: "1px 6px",
+                            borderRadius: 999,
+                          }}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                    {authed && (
+                      <button
+                        onClick={() => requestDeleteTab(t.id, t.name)}
+                        aria-label={`Delete ${t.name}`}
+                        className="skyfade-btn"
+                        style={{
+                          position: "absolute",
+                          right: 6,
+                          background: "none",
+                          border: "none",
+                          color: INK.lavenderDim,
+                          cursor: "pointer",
+                          padding: 3,
+                          display: "flex",
+                          borderRadius: 4,
+                        }}
+                      >
+                        <Icons.X size={13} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+
+              {authed &&
+                (addingTab ? (
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input
+                      autoFocus
+                      className="skyfade-input"
+                      value={newTabName}
+                      onChange={(e) => setNewTabName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") addTab();
+                        if (e.key === "Escape") {
+                          setAddingTab(false);
+                          setNewTabName("");
+                        }
+                      }}
+                      placeholder="Tab name"
+                      style={{ padding: "7px 12px", width: 130 }}
+                    />
+                    <button
+                      onClick={addTab}
+                      className="skyfade-btn"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: INK.gold,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <Icons.Plus size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setAddingTab(true)}
+                    className="skyfade-btn"
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: 999,
+                      border: "1px dashed rgba(255,255,255,0.28)",
+                      background: "none",
+                      color: INK.lavender,
+                      fontSize: 13.5,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <Icons.Plus size={14} /> New tab
+                  </button>
+                ))}
+            </nav>
+
+            <main style={{ marginTop: 26 }}>
+              {!loaded ? (
+                <div
+                  style={{
+                    color: INK.lavender,
+                    fontSize: 14,
+                    padding: "52px 0",
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}
+                >
+                  Loading the sky…
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                    gap: 14,
+                  }}
+                >
+                  {visibleLinks.map((l) => {
+                    const fav = faviconFor(l.url);
+                    const isEditing = editingLinkId === l.id;
+
+                    if (isEditing) {
+                      return (
+                        <div
+                          key={l.id}
+                          style={{
+                            background: "rgba(255,255,255,0.05)",
+                            border: `1px solid rgba(244,184,96,0.45)`,
+                            borderRadius: 14,
+                            padding: 16,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
+                            animation: "fade-up 0.2s ease",
+                          }}
+                        >
+                          <input
+                            autoFocus
+                            className="skyfade-input"
+                            placeholder="Title"
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                          />
+                          <input
+                            className="skyfade-input"
+                            placeholder="URL"
+                            value={newUrl}
+                            onChange={(e) => setNewUrl(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && saveLink()}
+                          />
+                          <input
+                            className="skyfade-input"
+                            placeholder="Note (optional)"
+                            value={newNote}
+                            onChange={(e) => setNewNote(e.target.value)}
+                          />
+                          {formError && (
+                            <div style={{ color: INK.danger, fontSize: 12 }}>{formError}</div>
+                          )}
+                          <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+                            <button
+                              onClick={saveLink}
+                              className="skyfade-btn"
+                              style={{
+                                flex: 1,
+                                padding: "8px 0",
+                                borderRadius: 8,
+                                border: "none",
+                                background: INK.gold,
+                                color: "#3D2A0C",
+                                fontWeight: 600,
+                                fontSize: 13,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingLinkId(null);
+                                setFormError("");
+                              }}
+                              className="skyfade-btn"
+                              style={{
+                                padding: "8px 12px",
+                                borderRadius: 8,
+                                border: "1px solid rgba(255,255,255,0.2)",
+                                background: "none",
+                                color: INK.lavender,
+                                fontSize: 13,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <a
+                        key={l.id}
+                        href={l.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`skyfade-card ${dragId === l.id ? "dragging" : ""}`}
+                        draggable={authed}
+                        onDragStart={() => onDragStart(l.id)}
+                        onDragOver={(e) => onDragOver(e, l.id)}
+                        onDragEnd={onDragEnd}
+                        style={{
+                          position: "relative",
+                          display: "block",
+                          background: INK.card,
+                          border: `1px solid ${INK.cardBorder}`,
+                          borderRadius: 14,
+                          padding: "16px 18px",
+                          textDecoration: "none",
+                          color: INK.cloud,
+                          animation: "fade-up 0.4s ease",
+                          cursor: authed ? "grab" : "pointer",
+                        }}
+                      >
+                        {authed && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: 8,
+                              right: 8,
+                              display: "flex",
+                              gap: 4,
+                            }}
+                          >
+                            <span
+                              style={{
+                                color: INK.lavenderDim,
+                                display: "flex",
+                                alignItems: "center",
+                                padding: "0 2px",
+                              }}
+                            >
+                              <Icons.GripVertical size={13} />
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                startEdit(l);
+                              }}
+                              aria-label="Edit"
+                              className="skyfade-btn"
+                              style={{
+                                background: "rgba(0,0,0,0.35)",
+                                border: "none",
+                                borderRadius: 6,
+                                color: INK.lavender,
+                                cursor: "pointer",
+                                padding: 5,
+                                display: "flex",
+                              }}
+                            >
+                              <Icons.Pencil size={12} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                requestDeleteLink(l.id, l.title);
+                              }}
+                              aria-label="Delete"
+                              className="skyfade-btn"
+                              style={{
+                                background: "rgba(0,0,0,0.35)",
+                                border: "none",
+                                borderRadius: 6,
+                                color: INK.lavender,
+                                cursor: "pointer",
+                                padding: 5,
+                                display: "flex",
+                              }}
+                            >
+                              <Icons.Trash2 size={12} />
+                            </button>
+                          </div>
+                        )}
+
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 11,
+                            marginBottom: 8,
+                          }}
+                        >
+                          {fav ? (
+                            <img
+                              src={fav}
+                              alt=""
+                              width={22}
+                              height={22}
+                              style={{
+                                borderRadius: 5,
+                                flexShrink: 0,
+                                boxShadow: "0 0 0 1px rgba(255,255,255,0.1)",
+                              }}
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: 22,
+                                height: 22,
+                                borderRadius: 5,
+                                background: "rgba(255,255,255,0.12)",
+                                flexShrink: 0,
+                              }}
+                            />
+                          )}
+                          <span
+                            style={{
+                              fontWeight: 500,
+                              fontSize: 15,
+                              paddingRight: authed ? 72 : 0,
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            {l.title}
+                          </span>
+                        </div>
+
+                        {l.note && (
+                          <div
+                            style={{
+                              fontSize: 12.5,
+                              color: INK.lavender,
+                              marginBottom: 8,
+                              lineHeight: 1.4,
+                              display: "flex",
+                              gap: 5,
+                              alignItems: "flex-start",
+                            }}
+                          >
+                            <span style={{ marginTop: 2, flexShrink: 0, opacity: 0.7, display: "flex" }}>
+                              <Icons.Info size={12} />
+                            </span>
+                            {l.note}
+                          </div>
+                        )}
+
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            color: INK.lavenderDim,
+                            fontSize: 12,
+                            fontFamily: "'JetBrains Mono', monospace",
+                          }}
+                        >
+                          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                            {hostFor(l.url)}{" "}
+                            <span style={{ opacity: 0.65, display: "flex" }}>
+                              <Icons.ExternalLink size={11} />
+                            </span>
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              copyUrl(l.url);
+                            }}
+                            className="skyfade-btn"
+                            title="Copy URL"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: INK.lavenderDim,
+                              cursor: "pointer",
+                              padding: 3,
+                              display: "flex",
+                              opacity: 0.6,
+                            }}
+                          >
+                            <Icons.Copy size={12} />
+                          </button>
+                        </div>
+                      </a>
+                    );
+                  })}
+
+                  {authed && addingLink && (
+                    <div
+                      style={{
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px dashed rgba(255,255,255,0.32)",
+                        borderRadius: 14,
+                        padding: 16,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                        animation: "fade-up 0.2s ease",
+                      }}
+                    >
+                      <input
+                        autoFocus
+                        className="skyfade-input"
+                        placeholder="Title"
+                        value={newTitle}
+                        onChange={(e) => setNewTitle(e.target.value)}
+                      />
+                      <input
+                        className="skyfade-input"
+                        placeholder="URL (example.com)"
+                        value={newUrl}
+                        onChange={(e) => setNewUrl(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && saveLink()}
+                      />
+                      <input
+                        className="skyfade-input"
+                        placeholder="Note (optional)"
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                      />
+                      {formError && (
+                        <div style={{ color: INK.danger, fontSize: 12 }}>{formError}</div>
+                      )}
+                      <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+                        <button
+                          onClick={saveLink}
+                          className="skyfade-btn"
+                          style={{
+                            flex: 1,
+                            padding: "8px 0",
+                            borderRadius: 8,
+                            border: "none",
+                            background: INK.gold,
+                            color: "#3D2A0C",
+                            fontWeight: 600,
+                            fontSize: 13,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Add link
+                        </button>
+                        <button
+                          onClick={() => {
+                            setAddingLink(false);
+                            setFormError("");
+                            setNewTitle("");
+                            setNewUrl("");
+                            setNewNote("");
+                          }}
+                          className="skyfade-btn"
+                          style={{
+                            padding: "8px 14px",
+                            borderRadius: 8,
+                            border: "1px solid rgba(255,255,255,0.2)",
+                            background: "none",
+                            color: INK.lavender,
+                            fontSize: 13,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {authed && !addingLink && !editingLinkId && (
+                    <button
+                      onClick={() => {
+                        setAddingLink(true);
+                        setNewTitle("");
+                        setNewUrl("");
+                        setNewNote("");
+                        setFormError("");
+                      }}
+                      className="skyfade-btn"
+                      style={{
+                        background: "none",
+                        border: "1px dashed rgba(255,255,255,0.28)",
+                        borderRadius: 14,
+                        padding: 16,
+                        color: INK.lavender,
+                        fontSize: 14,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        minHeight: 82,
+                      }}
+                    >
+                      <Icons.Plus size={16} /> Add a link
+                    </button>
+                  )}
+
+                  {!authed && visibleLinks.length === 0 && (
+                    <div
+                      style={{
+                        gridColumn: "1 / -1",
+                        padding: "56px 0",
+                        textAlign: "center",
+                        color: INK.lavenderDim,
+                      }}
+                    >
+                      <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.45 }}>✦</div>
+                      <div style={{ fontSize: 15.5 }}>
+                        {search ? "No links match." : "Nothing here yet."}
+                      </div>
+                      {search.trim() ? (
+                        <button
+                          className="skyfade-btn"
+                          onClick={() =>
+                            window.open(
+                              `https://www.google.com/search?q=${encodeURIComponent(search.trim())}`,
+                              "_blank",
+                              "noopener,noreferrer"
+                            )
+                          }
+                          style={{
+                            marginTop: 16,
+                            padding: "10px 18px",
+                            borderRadius: 999,
+                            border: "1px solid rgba(244,184,96,0.4)",
+                            background: "rgba(244,184,96,0.12)",
+                            color: INK.gold,
+                            fontSize: 14,
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <Icons.Search size={15} />
+                          Search the web for “{search.trim()}”
+                        </button>
+                      ) : (
+                        <div style={{ fontSize: 13, marginTop: 7, opacity: 0.7 }}>
+                          Unlock the sky to begin — or search the web above.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {authed && visibleLinks.length === 0 && !addingLink && (
+                    <div
+                      style={{
+                        gridColumn: "1 / -1",
+                        padding: "36px 0",
+                        textAlign: "center",
+                        color: INK.lavenderDim,
+                        fontSize: 14,
+                      }}
+                    >
+                      {search.trim() ? (
+                        <>
+                          <div>No links match your search.</div>
+                          <button
+                            className="skyfade-btn"
+                            onClick={() =>
+                              window.open(
+                                `https://www.google.com/search?q=${encodeURIComponent(search.trim())}`,
+                                "_blank",
+                                "noopener,noreferrer"
+                              )
+                            }
+                            style={{
+                              marginTop: 14,
+                              padding: "10px 18px",
+                              borderRadius: 999,
+                              border: "1px solid rgba(244,184,96,0.4)",
+                              background: "rgba(244,184,96,0.12)",
+                              color: INK.gold,
+                              fontSize: 14,
+                              fontWeight: 500,
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <Icons.Search size={15} />
+                            Search the web for “{search.trim()}”
+                          </button>
+                        </>
+                      ) : (
+                        "This tab is empty — add your first link."
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </main>
+          </div>
+
+          {confirmDelete && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(5,8,20,0.72)",
+                backdropFilter: "blur(7px)",
+                zIndex: 50,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 20,
+              }}
+              onClick={() => setConfirmDelete(null)}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  background: "rgba(15,18,40,0.98)",
+                  border: `1px solid ${INK.cardBorder}`,
+                  borderRadius: 16,
+                  padding: 24,
+                  maxWidth: 350,
+                  width: "100%",
+                  boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
+                  animation: "fade-up 0.22s ease",
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontWeight: 600,
+                    fontSize: 17,
+                    marginBottom: 8,
+                  }}
+                >
+                  Delete {confirmDelete.type}?
+                </div>
+                <div
+                  style={{
+                    color: INK.lavender,
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                    marginBottom: 20,
+                  }}
+                >
+                  {confirmDelete.type === "tab"
+                    ? `“${confirmDelete.name}” and all its links will be gone.`
+                    : `“${confirmDelete.name}” will be removed.`}
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    onClick={() => setConfirmDelete(null)}
+                    className="skyfade-btn"
+                    style={{
+                      flex: 1,
+                      padding: "10px 0",
+                      borderRadius: 9,
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      background: "none",
+                      color: INK.cloud,
+                      fontSize: 14,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeleteAction}
+                    className="skyfade-btn"
+                    style={{
+                      flex: 1,
+                      padding: "10px 0",
+                      borderRadius: 9,
+                      border: "none",
+                      background: "rgba(240,149,149,0.2)",
+                      color: INK.danger,
+                      fontWeight: 600,
+                      fontSize: 14,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {toast && (
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              onDone={() => setToast(null)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
